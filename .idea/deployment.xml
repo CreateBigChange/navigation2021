@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="wuhan2020@192.168.104.70:22" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="wuhan2020">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/yxs/navigation2021" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath path="/home/wuhan2020/anaconda3" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="wuhan2020@192.168.104.70:22">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="wuhan2020@192.168.104.70:22 (8)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/yxs/navigation2021" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="wuhan2020@192.168.104.70:22 (9)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/yxs/navigation2021" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
