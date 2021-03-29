@@ -15,21 +15,23 @@ from torch import nn
 from sklearn.metrics import accuracy_score
 import torch.nn.functional as F
 from joblib import dump, load
+import time
 
-def read_data(path_idx,datatype,test_idx,seperation_id,TIME_STEP,INPUT_SIZE):
+def read_data(persons,datatypes,test_idx,seperation_id,TIME_STEP,INPUT_SIZE):
 
-    # Ref Name
+
+
+    # reference points
     ref_names = ["ref_point_0.5m.csv", "ref_point_0.75m.csv", "ref_point_1.0m.csv", "ref_point_1.25m.csv",
                  "ref_point_1.5m.csv", "ref_point_1.75m.csv", "ref_point_2.0m.csv", "ref_point_2.5m.csv",
                  "ref_point_3.0m.csv", "ref_point_4.0m.csv"]
-    # grid size
+    # grid size for data
     names = ["seperation_0.5", "seperation_0.75", "seperation_1.0", "seperation_1.25", "seperation_1.5",
              "seperation_1.75", "seperation_2.0", "seperation_2.5", "seperation_3.0", "seperation_4.0"]
 
     # File of Data
-    prediction = "prediction"
     classification = "classification"
-    all_refences = np.loadtxt("ref_point.csv", delimiter=',')
+
 
     David_Trajectorys = []
     You_Trajectorys = []
@@ -43,129 +45,126 @@ def read_data(path_idx,datatype,test_idx,seperation_id,TIME_STEP,INPUT_SIZE):
     for item in You_files:
         You_Trajectorys.append(os.path.join("./data/Trajectory_You", item))
 
-    if path_idx ==0:
-        path = David_Trajectorys
-        path = ['./data/Trajectory_David/20150903000101', './data/Trajectory_David/20150903000102', './data/Trajectory_David/20150903000201', './data/Trajectory_David/20150903000202', './data/Trajectory_David/20150903000301', './data/Trajectory_David/20150903000302', './data/Trajectory_David/20150903000303', './data/Trajectory_David/20150903000304', './data/Trajectory_David/20150903000305', './data/Trajectory_David/20150903000401', './data/Trajectory_David/20150903000501', './data/Trajectory_David/20150903000601', './data/Trajectory_David/20150903000602', './data/Trajectory_David/20150903001001', './data/Trajectory_David/20150903001101', './data/Trajectory_David/20150903001201', './data/Trajectory_David/20150903010101', './data/Trajectory_David/20150903010201', './data/Trajectory_David/20150903010301', './data/Trajectory_David/20150903010401']
-    else:
-        path = You_Trajectorys
-        path =['./data/Trajectory_You/20150902115142', './data/Trajectory_You/20150903010338', './data/Trajectory_You/20150903010718', './data/Trajectory_You/20150903010831', './data/Trajectory_You/20150903011201', './data/Trajectory_You/20150903011715', './data/Trajectory_You/20150903013053', './data/Trajectory_You/20150903013636', './data/Trajectory_You/20150903014146', './data/Trajectory_You/20150903014459', './data/Trajectory_You/20150903014735', './data/Trajectory_You/20150903020638', './data/Trajectory_You/20150903021224', './data/Trajectory_You/20150903033517', './data/Trajectory_You/20150903034855', './data/Trajectory_You/20150903035855', './data/Trajectory_You/20150903040854', './data/Trajectory_You/20150903041905', './data/Trajectory_You/20150903042430', './data/Trajectory_You/20150903043106', './data/Trajectory_You/20150903120304', './data/Trajectory_You/20150903122250', './data/Trajectory_You/20150903123218', './data/Trajectory_You/20150903124254']
 
+
+
+
+
+
+    all_refences = np.loadtxt("ref_point.csv", delimiter=',')
     # padding value  = min(RSSIs from train data and test data)
     padding = -99.0
 
-    normalizer = load('normalizer.joblib')
-    for i in range(len(path)):
-
-
-        if i == test_idx:
-
-            continue
-
-        if i == 5:
-            continue
-        if i == 18:
-            continue
-
-        if not "train_data" in locals().keys():
-            # read data
-            train_data = np.loadtxt(os.path.join(path[i], classification, names[seperation_id], datatype), delimiter=',')
-            # padding
-            idx_zero = np.argwhere(train_data[:,0:-3] == 0)
-            train_data[idx_zero[:,0],idx_zero[:,1]] = padding
-
-            # normalization
-            # train_data[:,1:-3] = normalizer.transform(train_data[:,1:-3])
-
-            # def update_points(num):
-            #     point_ani.set_data(x[num], y[num])
-            #     return point_ani,
-            #
-            # x = train_data[:,-3]
-            # y = train_data[:,-2]
-            #
-            # fig = plt.figure(tight_layout=True)
-            # plt.plot(x, y)
-            # point_ani, = plt.plot(x[0], y[0], "ro")
-            # plt.grid(ls="--")
-            #
-            # ani = animation.FuncAnimation(fig, update_points, np.arange(0, train_data.shape[0]), interval=100, blit=True)
-            #
-            # plt.show()
-
-            if train_data.shape[0] < TIME_STEP:
-                continue
-
-            # acquire Sequential
-            Sequential_train_data = Windows_Split_Module(train_data, TIME_STEP)
-
-            Sequential_train_datas = Sequential_train_data
-
-
-            # def update_points(num):
-            #     point_ani.set_data(x[num], y[num])
-            #     return point_ani,
-            #
-            # x = Sequential_train_data[:,0,-3]
-            # y = Sequential_train_data[:,0,-2]
-            #
-            # fig = plt.figure(tight_layout=True)
-            # plt.plot(x, y)
-            # point_ani, = plt.plot(x[0], y[0], "ro")
-            # plt.grid(ls="--")
-            #
-            # ani = animation.FuncAnimation(fig, update_points, np.arange(0, train_data.shape[0]), interval=100, blit=True)
-            #
-            # plt.show()
-
-            # plt.figure()
-            # for j in range(Sequential_train_data.shape[0]):
-            #     plt.scatter(Sequential_train_data[j, :, -3], Sequential_train_data[j, :, -2])
-            #
-            # plt.show()
-
-            Graident_train_data = Graident_Generator(Sequential_train_data)
-
-            # plt.figure()
-            # for j in range(Graident_train_data.shape[0]):
-            #     plt.scatter(Graident_train_data[j, :, -3], Graident_train_data[j, :, -2])
-            #
-            # plt.show()
-
-            Graident_train_datas = Graident_train_data
-
+    for path_idx in persons:
+        if path_idx == 0:
+            path = David_Trajectorys
+            path = ['./data/Trajectory_David/20150903000101', './data/Trajectory_David/20150903000102',
+                    './data/Trajectory_David/20150903000201', './data/Trajectory_David/20150903000202',
+                    './data/Trajectory_David/20150903000301', './data/Trajectory_David/20150903000302',
+                    './data/Trajectory_David/20150903000303', './data/Trajectory_David/20150903000304',
+                    './data/Trajectory_David/20150903000305', './data/Trajectory_David/20150903000401',
+                    './data/Trajectory_David/20150903000501', './data/Trajectory_David/20150903000601',
+                    './data/Trajectory_David/20150903000602', './data/Trajectory_David/20150903001001',
+                    './data/Trajectory_David/20150903001101', './data/Trajectory_David/20150903001201',
+                    './data/Trajectory_David/20150903010101', './data/Trajectory_David/20150903010201',
+                    './data/Trajectory_David/20150903010301', './data/Trajectory_David/20150903010401']
         else:
-            # read data
-            train_data_ = np.loadtxt(os.path.join(path[i], classification, names[seperation_id],  datatype), delimiter=',')
-            # padding
-            idx_zero = np.argwhere(train_data_[:,0:-3] == 0)
-            train_data_[idx_zero[:,0],idx_zero[:,1]] =padding
-            # #normalization
-            # train_data_[:,1:-3] = normalizer.transform(train_data_[:,1:-3])
 
-            if train_data_.shape[0] < TIME_STEP:
-                continue
+            path = You_Trajectorys
+            path = ['./data/Trajectory_You/20150902115142', './data/Trajectory_You/20150903010338',
+                    './data/Trajectory_You/20150903010718', './data/Trajectory_You/20150903010831',
+                    './data/Trajectory_You/20150903011201', './data/Trajectory_You/20150903011715',
+                    './data/Trajectory_You/20150903013053', './data/Trajectory_You/20150903013636',
+                    './data/Trajectory_You/20150903014146', './data/Trajectory_You/20150903014459',
+                    './data/Trajectory_You/20150903014735', './data/Trajectory_You/20150903020638',
+                    './data/Trajectory_You/20150903021224', './data/Trajectory_You/20150903033517',
+                    './data/Trajectory_You/20150903034855', './data/Trajectory_You/20150903035855',
+                    './data/Trajectory_You/20150903040854', './data/Trajectory_You/20150903041905',
+                    './data/Trajectory_You/20150903042430', './data/Trajectory_You/20150903043106',
+                    './data/Trajectory_You/20150903120304', './data/Trajectory_You/20150903122250',
+                    './data/Trajectory_You/20150903123218', './data/Trajectory_You/20150903124254']
 
-            Sequential_train_data = Windows_Split_Module(train_data_, TIME_STEP)
-            Sequential_train_datas = np.concatenate((Sequential_train_datas,Sequential_train_data), axis=0)
+        for datatype in datatypes:
+            for i in range(len(path)):
 
-            Graident_train_data = Graident_Generator(Sequential_train_data)
-            Graident_train_datas = np.concatenate((Graident_train_datas, Graident_train_data), axis=0)
+                if i == test_idx:
+                    continue
 
-            train_data = np.vstack((train_data, train_data_))
+                if not os.path.exists(os.path.join(path[i], classification, names[seperation_id], datatype)):
+                    continue
+                if i == 5:
+                    continue
+                if i == 18:
+                    continue
+
+                train_data_ = np.loadtxt(os.path.join(path[i], classification, names[seperation_id], datatype), delimiter=',')
+
+                macs = np.loadtxt("mac_WIFI.csv",dtype=str)
+
+                corss_mac = np.loadtxt("cross_2017_origin.csv",dtype=str)
+
+                idx_sort = []
+                for _,item in enumerate(corss_mac):
+                    idx = np.argwhere(item == macs)
+                    idx_sort.append(idx[0, 0])
+
+                train_data_temp = train_data_[:, idx_sort]
+                train_data_ = np.hstack((train_data_[:, 0].reshape(-1, 1), train_data_temp, train_data_[:, -3:]))
+
+                if not "train_data" in locals().keys():
+                    # read data
+                    train_data = train_data_.copy()
+                    # padding
+                    idx_zero = np.argwhere(train_data[:,0:-3] == 0)
+                    train_data[idx_zero[:,0],idx_zero[:,1]] = padding
+
+                    if train_data.shape[0] < TIME_STEP:
+                        continue
+
+                    # acquire Sequential
+                    Sequential_train_data = Windows_Split_Module(train_data, TIME_STEP)
+
+                    Sequential_train_datas = Sequential_train_data
+
+
+                    Graident_train_data = Graident_Generator(Sequential_train_data)
+
+
+                    Graident_train_datas = Graident_train_data
+
+                else:
+
+                    # padding
+                    idx_zero = np.argwhere(train_data_[:, 0:-3] == 0)
+                    train_data_[idx_zero[:, 0], idx_zero[:, 1]] =padding
+
+                    if train_data_.shape[0] < TIME_STEP:
+                        continue
+
+                    Sequential_train_data = Windows_Split_Module(train_data_, TIME_STEP)
+                    Sequential_train_datas = np.concatenate((Sequential_train_datas,Sequential_train_data), axis=0)
+
+                    Graident_train_data = Graident_Generator(Sequential_train_data)
+                    Graident_train_datas = np.concatenate((Graident_train_datas, Graident_train_data), axis=0)
+
+                    train_data = np.vstack((train_data, train_data_))
+
+
+
 
 
     test_data = np.loadtxt(os.path.join(path[test_idx], classification, names[seperation_id], datatype), delimiter=',')
-    print(os.path.join(path[test_idx], classification, names[seperation_id], datatype))
+    test_data_2015 = np.loadtxt("data_2015_formatted.csv", delimiter=",")
+    test_data_2017 = np.loadtxt("data_2017_formatted.csv", delimiter=",")
+    test_data = test_data_2017
     # # padding
     idx_zero = np.argwhere(test_data[:, 0:-3] == 0)
     test_data[idx_zero[:, 0], idx_zero[:, 1]] = padding
-    #
-    # # normalization
-    # test_data[:, 1:-3] = normalizer.transform(test_data[:, 1:-3])
-    # # acquire Sequential and Graident
+
 
     Sequential_test_data = Windows_Split_Module(test_data, TIME_STEP)
     Graident_test_data = Graident_Generator(Sequential_test_data)
+
     # train_data = np.loadtxt(os.path.join(path[0], classification, datatype), delimiter=',')
     #
     # test_data = np.loadtxt(os.path.join(path[1], classification, datatype), delimiter=',')
@@ -182,18 +181,16 @@ def read_data(path_idx,datatype,test_idx,seperation_id,TIME_STEP,INPUT_SIZE):
     test_y_r = test_data[:, - 3: - 1]
 
 
-    # normalizer = preprocessing.Normalizer().fit(train_x)
-    # train_x = normalizer.transform(train_x)
-    # test_x = normalizer.transform(test_x)
+
     all_refences = np.loadtxt(ref_names[seperation_id], delimiter=',')
-    # lanmark all points with rssi
-    refrence_rssi = np.zeros((all_refences.shape[0],INPUT_SIZE+3))
+    ################       lanmark all points with rssi
+    refrence_rssi = np.zeros((all_refences.shape[0], INPUT_SIZE+3))
     for i, item in enumerate(all_refences):
         # print(item)
         loc_idx = item[-1]
-        location= item[0:2]
-        refrence_rssi[i, 807:809] = location
-        refrence_rssi[i, 809] = loc_idx
+        location = item[0:2]
+        refrence_rssi[i, -3:-1] = location
+        refrence_rssi[i, -1] = loc_idx
         # find all  fingerprints where location = item
         idx = np.argwhere(loc_idx==train_data[:, -1])
         if len(idx) == 0:
@@ -214,36 +211,12 @@ def read_data(path_idx,datatype,test_idx,seperation_id,TIME_STEP,INPUT_SIZE):
             avg_num[value_idx] =  avg_num[value_idx] + 1
         value_idx = np.argwhere(avg_rssi != 0 )
         avg_rssi[value_idx] = avg_rssi[value_idx] / avg_num[value_idx]
-        refrence_rssi[i,0:807] = avg_rssi
+        refrence_rssi[i, 0:-3] = avg_rssi
 
 
-    # # padding = min(train_x.min(),test_x.min())
-    # # for i, item in enumerate(train_x):
-    # #     idx = np.argwhere(0 == item)
-    # #     train_x[i, idx] = padding
-    # for i, item in enumerate(test_x):
-    #     idx = np.argwhere(0 == item )
-    #     test_x[i, idx] = padding
-    # for i,item in enumerate(refrence_rssi[0:-3]):
-    #     idx = np.argwhere(0 == item)
-    #     refrence_rssi[i,idx] = padding
+    return [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Sequential_test_data, Graident_test_data,Sequential_train_datas,Graident_train_datas,refrence_rssi]
 
-    # acquire all reference
 
-    # normalizer = preprocessing.Normalizer().fit(train_x)
-    # dump(normalizer, 'normalizer.joblib')
-    # train_x=normalizer.transform(train_x)
-    # test_x = normalizer(test_x)
-
-    # plt.figure()
-    # plt.scatter(test_y_value[:,0], test_y_value[:,1],c = 'r')
-    # plt.scatter(all_refences[test_y.astype(int),0], all_refences[test_y.astype(int),1])
-    # plt.show()
-    # plt.figure()
-    # plt.scatter(train_y_value[:,0], train_y_value[:,1],c = 'r')
-    # plt.scatter(all_refences[train_y.astype(int),0], all_refences[train_y.astype(int),1])
-    # plt.show()
-    return [train_x, train_y_c,train_y_r, test_x, test_y_c, test_y_r, all_refences,Sequential_test_data,Graident_test_data,Sequential_train_datas,Graident_train_datas,refrence_rssi]
 
 
 def Windows_Split_Module(train_data, TIME_STEP):
@@ -278,7 +251,7 @@ def Graident_Generator(train_data):
         end_Node = item[-1,:]
         end_Node_prints = end_Node[1:-3]
         for j in range(TIME_STEP-1):
-            Graident_train_data[i,j,1:-3] = Graident_train_data[i,j,1:-3] - end_Node_prints
+            Graident_train_data[i, j, 1:-3] = Graident_train_data[i,j,1:-3] - end_Node_prints
 
     return Graident_train_data
 
@@ -286,24 +259,18 @@ def Graident_Generator(train_data):
 if __name__ == '__main__':
 
     # Data Type
-    IOS_ACCLE = "ios_accel.csv"
-    IOS_BLE = "ios_ble.csv"
-    IOS_GYRO = "ios_gyro.csv"
-    IOS_MAG = "ios_mag.csv"
     REF1 = "ref_1.txt"
     REF2 = "ref_2.txt"
-    SENSOR2 = "sensor2.csv"
-    SENSOR3 = "sensor3.csv"
-    LANDMARK = "landmark.txt"
+
+
     WIFI2 = "wifi2.csv"
     WIFI3 = "wifi3.csv"
-    DEL_WIFI2 = "del_wifi2.csv"
-    DEL_WIFI3 = "del_wifi3.csv"
 
-    datatypes = [IOS_BLE, IOS_MAG, SENSOR2, SENSOR3, WIFI3, WIFI2]
+
+    datatypes = [WIFI3, WIFI2]
 
     # Select Person's Trajectory: 0 is David, 1 is You
-    path_idx = 0
+    path_idx = 1
 
     datatype = WIFI3
 
@@ -315,11 +282,12 @@ if __name__ == '__main__':
 
 
     # define Hyper Parameters
-    TIME_STEP = 6  # rnn time step
-    INPUT_SIZE = 807  # rnn input size
+    TIME_STEP = 4  # rnn time step
+    INPUT_SIZE = 468  # rnn input size
     LR = 0.0005  # learning rate
     BATCH_SIZE = 100
 
+    persons = [0, 1]
 
     # read data and build loader
     # Input: path_idx : Id of  Person
@@ -342,7 +310,18 @@ if __name__ == '__main__':
     #       Graident_train_datas: Graident of train datas consisted of [Time,DRSSI...,Position,Id of Position], shape=[BATCH_SIZE,TIEM_STEP,INPUT_SIZE]
     #       refrence_rssi:RSSIS for every RPs
 
-    [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Sequential_test_data, Graident_test_data, Sequential_train_datas, Graident_train_datas,refrence_rssi]= read_data(path_idx, datatype, test_idx, seperation_id, TIME_STEP,INPUT_SIZE)
+    # [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Sequential_test_data, Graident_test_data, Sequential_train_datas, Graident_train_datas,refrence_rssi]= read_data(path_idx, datatype, test_idx, seperation_id, TIME_STEP,INPUT_SIZE)
+    # you_wifi2
+    [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Graident_test_data,Sequential_test_data, Graident_train_datas,Sequential_train_datas,  refrence_rssi] = read_data(persons, datatypes, test_idx, seperation_id, TIME_STEP, INPUT_SIZE)
+    # # you_wifi3
+    # [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Graident_test_data,Sequential_test_data, Graident_train_datas,Sequential_train_datas,  refrence_rssi] = read_data(path_idx, datatype, test_idx, seperation_id, TIME_STEP, INPUT_SIZE)
+    # # david_wifi2
+    # [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Graident_test_data,Sequential_test_data, Graident_train_datas,Sequential_train_datas,  refrence_rssi] = read_data(path_idx, datatype, test_idx, seperation_id, TIME_STEP, INPUT_SIZE)
+    # # david_wifi3
+    # [train_x, train_y_c, train_y_r, test_x, test_y_c, test_y_r, all_refences, Graident_test_data,Sequential_test_data, Graident_train_datas,Sequential_train_datas,  refrence_rssi] = read_data(path_idx, datatype, test_idx, seperation_id, TIME_STEP, INPUT_SIZE)
+    #
+
+    #concatanate
 
     # Data.TensorDataset(x, y)
     # loader = Data.DataLoader(
@@ -391,9 +370,6 @@ class RNN(nn.Module):
         self.hideen_size = 60
         self.num_layters = 1
 
-        # define LSTM
-        # self.bn_input = nn.BatchNorm1d(INPUT_SIZE, momentum=0.5)
-
         self.RSSI2hidden = nn.Sequential(
             nn.BatchNorm1d(INPUT_SIZE, momentum=0.5),
             nn.Linear(INPUT_SIZE, self.hideen_size*4),
@@ -416,11 +392,11 @@ class RNN(nn.Module):
 
         self.encoder = nn.LSTM(
 
-            input_size= self.hideen_size*2,
+            input_size=self.hideen_size*2,
             hidden_size=self.hideen_size,
             num_layers=self.num_layters,
             batch_first=True,
-            dropout=0.1,
+            # dropout=0.2,
         )
 
         # # Attention Model 1
@@ -442,22 +418,24 @@ class RNN(nn.Module):
             nn.BatchNorm1d(90, momentum=0.5),
             torch.nn.Dropout(0.5),
             nn.ReLU(),
-            nn.Linear(90,1)
+            nn.Linear(90, 1)
 
         )
 
 
         self.decoder = nn.LSTM(
-            input_size=self.hideen_size*5 ,
+
+            input_size=self.hideen_size*5,
             hidden_size=self.hideen_size,
             num_layers=self.num_layters,
             batch_first=True,
-            dropout=0.1,
+            # dropout=0.2,
+
         )
         self.predicter = nn.Sequential(
 
             nn.Linear(self.hideen_size * 6, 240),
-            nn.BatchNorm1d(240,momentum=0.5),
+            nn.BatchNorm1d(240, momentum=0.5),
             torch.nn.Dropout(0.5),
             nn.Tanh(),
             nn.Linear(240, CLASS)
@@ -475,9 +453,9 @@ class RNN(nn.Module):
 
         for i in range(TIME_STEP-1):
 
-            TEMP_DRSSI = torch.cat((TEMP_DRSSI,self.DRSSI2hidden(DRSSI[:,i,:]).unsqueeze(1)),dim=1)
+            TEMP_DRSSI = torch.cat((TEMP_DRSSI,self.DRSSI2hidden(DRSSI[:, i, :]).unsqueeze(1)), dim=1)
 
-        TEMP_DRSSI = torch.cat((TEMP_DRSSI,self.RSSI2hidden(DRSSI[:,-1,:]).unsqueeze(1)),dim=1)
+        TEMP_DRSSI = torch.cat((TEMP_DRSSI, self.RSSI2hidden(DRSSI[:, -1, :]).unsqueeze(1)), dim=1)
 
         DRSSI = TEMP_DRSSI
         H, (h_, c_) = self.encoder(DRSSI, None)
@@ -513,7 +491,7 @@ class RNN(nn.Module):
 
         return C_i
 
-    def Decoder(self,y_hat_i_1,TEMP_RSSI,C_i,S_h,S_c):
+    def Decoder(self, y_hat_i_1,TEMP_RSSI,C_i,S_h,S_c):
 
         # Decoder
         # Input:y_hat_i_1.shape=[batch_size,input_size]
@@ -561,12 +539,12 @@ class RNN(nn.Module):
             out = self.Predicter(y_hat_i_1, S_h, TEMP_RSSI, C_i)
 
             result = torch.cat((result, out.unsqueeze(1)), dim=1)
-            out_c = F.softmax(out)
+            out_c = F.log_softmax(out)
 
 
             topv, topi = out_c.topk(1)
 
-            y_hat_i_1 = refrence_rssi[topi[:, 0], 0:807].cuda()
+            y_hat_i_1 = refrence_rssi[topi[:, 0], 0:-3].cuda()
 
         return result
 
@@ -613,9 +591,9 @@ class RNN(nn.Module):
                 LIST[idx*k+i, 1] = topv[:, i-1]
 
                 # acqiure y_hat_i_1
-                y_hat_i_1_s.append(refrence_rssi[topi[:, i-1], 0:807].cuda())
+                y_hat_i_1_s.append(refrence_rssi[topi[:, i-1], 0:-3].cuda())
 
-                self.recursion(H, S_h, S_c, refrence_rssi[topi[:, i-1], 0:807].cuda(), RSSI, result, refrence_rssi, j + 1, idx*k+i, LIST)
+                self.recursion(H, S_h, S_c, refrence_rssi[topi[:, i-1], 0:-3].cuda(), RSSI, result, refrence_rssi, j + 1, idx*k+i, LIST)
 
 
             return 0
@@ -634,6 +612,7 @@ class RNN(nn.Module):
 
 
         BATCH_SIZE = RSSI.shape[0]
+
         # init y_hat_i_1 with 0
         y_hat_i_1 = torch.zeros(BATCH_SIZE,INPUT_SIZE).cuda()
 
@@ -644,7 +623,7 @@ class RNN(nn.Module):
         if sign:
             # prediction
 
-            return self.Prediction(H,S_h,S_c,y_hat_i_1,RSSI,result,refrence_rssi)
+            return self.Prediction(H, S_h, S_c, y_hat_i_1, RSSI, result, refrence_rssi)
 
         else:
             #train
@@ -652,16 +631,17 @@ class RNN(nn.Module):
             j = 0
             idx = 0
 
-            NUM = int(math.pow(k,0)*(1-math.pow(k,TIME_STEP+1))/(1-k))
-            LIST = torch.ones((NUM, 2,BATCH_SIZE)).cuda() * -1
+            NUM = int(math.pow(k, 0)*(1-math.pow(k, TIME_STEP+1))/(1-k))
+            LIST = torch.ones((NUM, 2, BATCH_SIZE)).cuda() * -1
             self.recursion(H, S_h, S_c, y_hat_i_1, RSSI, result, refrence_rssi, j,idx,LIST)
 
         return LIST
 
 
 
-rnn = RNN().cuda()
 
+
+rnn = torch.load("time_2017__03.pkl")
 print(rnn)
 
 optimizer = torch.optim.Adam(rnn.parameters(), lr=LR)  # optimize all cnn parameters
@@ -676,37 +656,14 @@ min = 1000
 LOSS = 0
 num = 0
 avg_loss = []
-k = 2
+k = 3
+
+
 
 for epoch in range(2000):
-    for step,(batch_x,batch_y) in enumerate(loader):
+    for step, (batch_x, batch_y) in enumerate(loader):
+        start_time = time.time()
 
-        batch_x_RSSI = batch_x[:, 0, :, :]
-        batch_x_DRSSI = batch_x[:, 1, :, :]
-        batch_y = batch_y[:, 0, :, :]
-
-        b_y_c = batch_y[:,:,-1]
-        b_y_r = batch_y[:,:,-3:-1]
-
-
-        optimizer.zero_grad()
-
-        output = rnn(batch_x_RSSI.float(),batch_x_DRSSI.float(),refrence_rssi,k,True)
-        total_loss = 0
-        for i in range(batch_x.shape[0]):
-            loss = loss_func(output[i, :, :], b_y_c[i, :].to(torch.int64))
-            total_loss = total_loss + loss
-            # if i < (batch_x.shape[0]-1):
-            #     loss.backward(retain_graph=True)
-            # else:
-            #     loss.backward()
-        loss.backward()
-        optimizer.step()
-
-        LOSS = LOSS + loss.item()
-        num = num + 1
-        temp = LOSS / (num*BATCH_SIZE)
-        avg_loss.append(temp)
 
         err = 0
         pre = torch.tensor([]).cuda()
@@ -721,13 +678,11 @@ for epoch in range(2000):
         # t_y = testy.view(BATCH_SIZE, TIME_STEP, 1)
 
         #  tree opt True mean train but False mean test
-        sign = True
+        sign = False
 
         out = rnn(test_x_RSSI.float(),test_x_DRSSI.float(),refrence_rssi.float(),k,sign)
         # pre =torch.cat((pre,out),dim=0)
         # all_t_y_r = torch.cat((all_t_y_r,t_y_r),dim=0)
-
-
 
 
         if sign==False:
@@ -765,32 +720,33 @@ for epoch in range(2000):
             higest_accrate_predition = torch.zeros(t_y_r.shape[0],TIME_STEP)
             avg_errs = 0
             avg_errs_hights = 0
+            all_errs = []
             for i in range(t_y_r.shape[0]):
 
-
                 # index for prob
-                tree_path_idx_pro = torch.argsort(accumulate_prob[:, i])
+                tree_path_idx_pro = torch.argsort(accumulate_prob[:, i],descending=True)
 
                 # all sequential solutions for node i
                 higest_score_prediction[i,:,:] = accumulate_node[tree_path_idx_pro, i, :]
                 # avg for the number of solutions
-                n = 2
-                all_refences[higest_score_prediction[i, 0:n, :].to(torch.int64), 0:2]
+                n =4
 
                 # acquire n y_hat
                 n_y_hat = all_refences[higest_score_prediction[i, 0:n, :].to(torch.int64), 0:2]
                 # avg
-                y_hat = torch.sum(n_y_hat,dim =0 )/2
-
+                y_hat = torch.sum(n_y_hat,dim =0 )/n
+                if i ==0:
+                    Y_hat = y_hat.view(1, -1, 2)
+                else:
+                    Y_hat = torch.cat((Y_hat, y_hat.view(1, -1, 2)), dim=0)
                 n_errs_hights = y_hat - t_y_r[i]
                 n_errs_hights = torch.pow(n_errs_hights, 2)
                 n_errs_hights = torch.sum(n_errs_hights, dim = 1)
                 n_errs_hights = torch.sqrt(n_errs_hights)
                 n_errs_hights = torch.sum(n_errs_hights)/TIME_STEP
 
-
                 avg_errs_hights = avg_errs_hights + n_errs_hights
-
+                all_errs.append(n_errs_hights.item())
                 # lowest err
                 errs = torch.sum(torch.sqrt(torch.sum(torch.pow(all_refences[accumulate_node[:, i, :].to(torch.int64), 0:2] - t_y_r[i], 2), dim=2)), dim=1) / TIME_STEP
                 tree_path_idx_err = torch.argmin(errs)
@@ -801,10 +757,19 @@ for epoch in range(2000):
             avg_errs = avg_errs / t_y_r.shape[0]
             avg_errs_hights = avg_errs_hights / t_y_r.shape[0]
 
-            print(avg_errs_hights)
-            print(avg_errs)
+            # print(avg_errs_hights)
+            end_time = time.time()
+            if min > avg_errs_hights:
+                min_Y_hat = Y_hat
+                min_all_errs = all_errs
+                # min_errs =
+                min = avg_errs_hights
+
+            # print(avg_errs)
             # print(higest_accrate_predition)
             # print(higest_score_prediction)
+            print("avg_errs",avg_errs,"avg_errs_hights",avg_errs_hights,"min",min,'cost time',end_time-start_time)
+
         else:
 
             # err = err + sum(torch.sqrt(torch.sum(torch.pow(t_y_r -out,2),dim = 1)))
@@ -816,7 +781,8 @@ for epoch in range(2000):
             all_t_y_r = torch.cat((all_t_y_r.float(),t_y_r.float()))
 
             pre = pre.to(torch.int64)
-            err = torch.sum(torch.sqrt(torch.sum(torch.pow(all_refences[topc.flatten(), 0:2] - t_y_r.view(-1, 2), 2), dim=1))) / (TIME_STEP*t_y_r.shape[0])
+            errs = torch.sqrt(torch.sum(torch.pow(all_refences[topc.flatten(), 0:2] - t_y_r.view(-1, 2), 2), dim=1))
+            err = torch.sum(errs) / (TIME_STEP*t_y_r.shape[0])
 
             # err = torch.sum(torch.sqrt(torch.sum(torch.pow(pre - all_t_y_r,2),1))) / (Sequential_test_data.shape[0]*Sequential_test_data.shape[1])
             # plt.figure()
@@ -826,10 +792,8 @@ for epoch in range(2000):
             if min > err:
                 min = err
                 min_pre = pre
-                torch.save(rnn, 'Navigation_08_log_softmax_David_wifi3_timestep_6.pkl')
-
+                min_point = all_refences[topc.flatten(), 0:2]
+                # torch.save(rnn, 'Navigation_09_softmax.pkl')
+            end_time = time.time()
             if step % 20 == 0:
-                print("Epoch", epoch, "train_loss", temp, "err", err, "minerr", min)
-
-
-
+                print("Epoch", epoch,  "err", err, "minerr", min, 'cost time', end_time-start_time)
